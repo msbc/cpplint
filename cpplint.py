@@ -1160,7 +1160,8 @@ class _CppLintState(object):
                     failure.text = '\n'.join(texts)
 
         xml_decl = '<?xml version="1.0" encoding="UTF-8" ?>\n'
-        return xml_decl + xml.etree.ElementTree.tostring(testsuite, 'utf-8').decode('utf-8')
+        xml_decl += xml.etree.ElementTree.tostring(testsuite, 'utf-8').decode('utf-8')
+        return xml_decl
 
 
 _cpplint_state = _CppLintState()
@@ -2086,7 +2087,8 @@ def GetHeaderGuardCPPVariable(filename):
 
         if _root_debug:
             sys.stderr.write(("_root lstrip (maybe_path=%s, file_path_from_root=%s,"
-                              + " _root=%s)\n") % (maybe_path, file_path_from_root, _root))
+                              + " _root=%s)\n")
+                             % (maybe_path, file_path_from_root, _root))
 
         if maybe_path:
             return os.path.join(*maybe_path)
@@ -2100,7 +2102,8 @@ def GetHeaderGuardCPPVariable(filename):
 
         if _root_debug:
             sys.stderr.write(("_root prepend (maybe_path=%s, full_path=%s, "
-                              + "root_abspath=%s)\n") % (maybe_path, full_path, root_abspath))
+                              + "root_abspath=%s)\n")
+                             % (maybe_path, full_path, root_abspath))
 
         if maybe_path:
             return os.path.join(*maybe_path)
@@ -3401,7 +3404,8 @@ def CheckComment(line, filename, linenum, next_line_start, error):
                           '"// TODO(my_username): Stuff."')
 
                 middle_whitespace = match.group(3)
-                # Comparisons made explicit for correctness -- pylint: disable=g-explicit-bool-comparison
+                # Comparisons made explicit for correctness -- pylint:
+                # disable=g-explicit-bool-comparison
                 if middle_whitespace != ' ' and middle_whitespace != '':
                     error(filename, linenum, 'whitespace/todo', 2,
                           'TODO(my_username) should be followed by a space')
@@ -4710,10 +4714,10 @@ def _DropCommonSuffixes(filename):
       The filename with the common suffix removed.
     """
     for suffix in itertools.chain(
-        ('%s.%s' % (test_suffix.lstrip('_'), ext)
-         for test_suffix, ext in itertools.product(_test_suffixes, GetNonHeaderExtensions())),
-        ('%s.%s' % (suffix, ext)
-         for suffix, ext in itertools.product(['inl', 'imp', 'internal'], GetHeaderExtensions()))):
+        ('%s.%s' % (test_suffix.lstrip('_'), ext) for test_suffix, ext in
+         itertools.product(_test_suffixes, GetNonHeaderExtensions())),
+        ('%s.%s' % (suffix, ext) for suffix, ext in
+         itertools.product(['inl', 'imp', 'internal'], GetHeaderExtensions()))):
         if (filename.endswith(suffix) and len(filename) > len(suffix)
                 and filename[-len(suffix) - 1] in ('-', '_')):
             return filename[:-len(suffix) - 1]
@@ -4830,7 +4834,8 @@ def CheckIncludeLine(filename, clean_lines, linenum, include_state, error):
 
         for extension in GetNonHeaderExtensions():
             if (include.endswith('.' + extension)
-                    and os.path.dirname(fileinfo.RepositoryName()) != os.path.dirname(include)):
+                    and os.path.dirname(fileinfo.RepositoryName())
+                    != os.path.dirname(include)):
                 error(filename, linenum, 'build/include', 4,
                       'Do not include .' + extension + ' files from other packages')
                 return
@@ -5412,7 +5417,8 @@ def CheckForNonConstReference(filename, clean_lines, linenum,
         # multi-line parameter list.  Try a bit harder to catch this case.
         for i in xrange(2):
             if (linenum > i
-                    and Search(whitelisted_functions, clean_lines.elided[linenum - i - 1])):
+                    and Search(whitelisted_functions,
+                               clean_lines.elided[linenum - i - 1])):
                 return
 
     decls = ReplaceAll(r'{[^}]*}', ' ', line)  # exclude function body
@@ -5814,7 +5820,7 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
                 required[header] = (linenum, template)
 
         # The following function is just a speed up, no semantics are changed.
-        if not '<' in line:  # Reduces the cpu time usage by skipping lines.
+        if '<' not in line:  # Reduces the cpu time usage by skipping lines.
             continue
 
         for pattern, template, header in _re_pattern_templates:
@@ -6266,20 +6272,20 @@ def ProcessConfigOverrides(filename):
                     elif name == 'exclude_files':
                         # When matching exclude_files pattern, use the base_name of
                         # the current file name or the directory name we are processing.
-                        # For example, if we are checking for lint errors in /foo/bar/baz.cc
-                        # and we found the .cfg file at /foo/CPPLINT.cfg, then the config
-                        # file's "exclude_files" filter is meant to be checked against "bar"
-                        # and not "baz" nor "bar/baz.cc".
+                        # For example, if we are checking for lint errors in
+                        # /foo/bar/baz.cc and we found the .cfg file at /foo/CPPLINT.cfg,
+                        # then the config file's "exclude_files" filter is meant to be
+                        # checked against "bar" and not "baz" nor "bar/baz.cc".
                         if base_name:
                             pattern = re.compile(val)
                             if pattern.match(base_name):
                                 if _cpplint_state.quiet:
                                     # Suppress "Ignoring file" warning when using --quiet.
                                     return False
-                                _cpplint_state.PrintInfo('Ignoring "%s": file excluded by "%s". '
-                                                         'File path component "%s" matches '
-                                                         'pattern "%s"\n' %
-                                                         (filename, cfg_file, base_name, val))
+                                _cpplint_state.PrintInfo(
+                                    'Ignoring "%s": file excluded by "%s". '
+                                    'File path component "%s" matches pattern "%s"\n'
+                                    % (filename, cfg_file, base_name, val))
                                 return False
                     elif name == 'linelength':
                         global _line_length
@@ -6293,8 +6299,9 @@ def ProcessConfigOverrides(filename):
                             extensions = [ext.strip() for ext in val.split(',')]
                             _valid_extensions = set(extensions)
                         except ValueError:
-                            sys.stderr.write('Extensions should be a comma-separated list of values;'
-                                             'for example: extensions=hpp,cpp\n'
+                            sys.stderr.write('Extensions should be a comma-separated '
+                                             'list of values; for example: '
+                                             'extensions=hpp,cpp\n'
                                              'This could not be parsed: "%s"' % (val,))
                     elif name == 'root':
                         global _root
