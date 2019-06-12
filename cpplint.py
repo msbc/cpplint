@@ -1896,8 +1896,8 @@ def FindStartOfExpressionInLine(line, endpos, stack):
             #
             # Ignore it if it's a "->" or ">=" or "operator>"
             if (i > 0
-                and (line[i - 1] == '-' or
-                     Match(r'\s>=\s', line[i - 1:])
+                and (line[i - 1] == '-'
+                     or Match(r'\s>=\s', line[i - 1:])
                      or Search(r'\boperator\s*$', line[0:i]))):
                 i -= 1
             else:
@@ -3149,19 +3149,19 @@ def CheckForNonStandardConstructs(filename, clean_lines, linenum,
 
         variadic_args = [arg for arg in constructor_args if '&&...' in arg]
         defaulted_args = [arg for arg in constructor_args if '=' in arg]
-        noarg_constructor = (not constructor_args or  # empty arg list
+        noarg_constructor = (not constructor_args  # empty arg list
                              # 'void' arg specifier
-                             (len(constructor_args) == 1
-                              and constructor_args[0].strip() == 'void'))
-        onearg_constructor = ((len(constructor_args) == 1 and  # exactly one arg
-                               not noarg_constructor) or
+                             or (len(constructor_args) == 1
+                                 and constructor_args[0].strip() == 'void'))
+        onearg_constructor = ((len(constructor_args) == 1  # exactly one arg
+                               and not noarg_constructor)
                               # all but at most one arg defaulted
-                              (len(constructor_args) >= 1
-                               and not noarg_constructor
-                               and len(defaulted_args) >= len(constructor_args) - 1) or
+                              or (len(constructor_args) >= 1
+                                  and not noarg_constructor
+                                  and len(defaulted_args) >= len(constructor_args) - 1)
                               # variadic arguments with zero or one argument
-                              (len(constructor_args) <= 2
-                               and len(variadic_args) >= 1))
+                              or (len(constructor_args) <= 2
+                                  and len(variadic_args) >= 1))
         initializer_list_constructor = bool(
             onearg_constructor
             and Search(r'\bstd\s*::\s*initializer_list\b', constructor_args[0]))
@@ -3226,12 +3226,11 @@ def CheckSpacingForFunctionCall(filename, clean_lines, linenum, error):
     # Note that we assume the contents of [] to be short enough that
     # they'll never need to wrap.
     if (  # Ignore control structures.
-        not Search(r'\b(if|for|while|switch|return|new|delete|catch|sizeof)\b',
-                   fncall) and
-        # Ignore pointers/references to functions.
-        not Search(r' \([^)]+\)\([^)]*(\)|,$)', fncall) and
-        # Ignore pointers/references to arrays.
-            not Search(r' \([^)]+\)\[[^\]]+\]', fncall)):
+        not Search(r'\b(if|for|while|switch|return|new|delete|catch|sizeof)\b', fncall)
+            # Ignore pointers/references to functions.
+            and not Search(r' \([^)]+\)\([^)]*(\)|,$)', fncall)
+            # Ignore pointers/references to arrays.
+            and not Search(r' \([^)]+\)\[[^\]]+\]', fncall)):
         if Search(r'\w\s*\(\s(?!\s*\\$)', fncall):      # a ( used for a fn call
             error(filename, linenum, 'whitespace/parens', 4,
                   'Extra space after ( in function call')
@@ -3382,8 +3381,8 @@ def CheckComment(line, filename, linenum, next_line_start, error):
             if (not (Match(r'^.*{ *//', line) and next_line_start == commentpos)
                 and ((commentpos >= 1
                       and line[commentpos-1] not in string.whitespace)
-                     or (commentpos >= 2 and
-                         line[commentpos-2] not in string.whitespace))):
+                     or (commentpos >= 2
+                         and line[commentpos-2] not in string.whitespace))):
                 error(filename, linenum, 'whitespace/comments', 2,
                       'At least two spaces is best between code and comments')
 
@@ -3575,8 +3574,7 @@ def CheckOperatorSpacing(filename, clean_lines, linenum, error):
     # Otherwise not.  Note we only check for non-spaces on *both* sides;
     # sometimes people put non-spaces on one side when aligning ='s among
     # many lines (not that this is behavior that I approve of...)
-    if ((Search(r'[\w.]=', line) or
-         Search(r'=[\w.]', line))
+    if ((Search(r'[\w.]=', line) or Search(r'=[\w.]', line))
         and not Search(r'\b(if|while|for) ', line)
         # Operators taken from [lex.operators] in C++11 standard.
         and not Search(r'(>=|<=|==|!=|&=|\^=|\|=|\+=|\*=|\/=|\%=)', line)
@@ -4194,12 +4192,11 @@ def CheckTrailingSemicolon(filename, clean_lines, linenum, error):
             line_prefix = opening_parenthesis[0][0:opening_parenthesis[2]]
             macro = Search(r'\b([A-Z_][A-Z0-9_]*)\s*$', line_prefix)
             func = Match(r'^(.*\])\s*$', line_prefix)
-            if ((macro and
-                 macro.group(1) not in (
+            if ((macro and macro.group(1) not in (
                      'TEST', 'TEST_F', 'MATCHER', 'MATCHER_P', 'TYPED_TEST',
                      'EXCLUSIVE_LOCKS_REQUIRED', 'SHARED_LOCKS_REQUIRED',
-                     'LOCKS_EXCLUDED', 'INTERFACE_DEF')) or
-                (func and not Search(r'\boperator\s*\[\s*\]', func.group(1)))
+                     'LOCKS_EXCLUDED', 'INTERFACE_DEF'))
+                or (func and not Search(r'\boperator\s*\[\s*\]', func.group(1)))
                 or Search(r'\b(?:struct|union)\s+alignas\s*$', line_prefix)
                 or Search(r'\bdecltype$', line_prefix)
                     or Search(r'\s+=\s*$', line_prefix)):
@@ -4653,18 +4650,17 @@ def CheckStyle(filename, clean_lines, linenum, file_extension, nesting_state,
             error(filename, linenum, 'whitespace/line_length', 2,
                   'Lines should be <= %i characters long' % _line_length)
 
-    if (cleansed_line.count(';') > 1 and
+    if (cleansed_line.count(';') > 1
         # allow simple single line lambdas
-        not Match(r'^[^{};]*\[[^\[\]]*\][^{}]*\{[^{}\n\r]*\}',
-                  line) and
+        and not Match(r'^[^{};]*\[[^\[\]]*\][^{}]*\{[^{}\n\r]*\}', line)
         # for loops are allowed two ;'s (and may run over two lines).
-        cleansed_line.find('for') == -1
+        and cleansed_line.find('for') == -1
         and (GetPreviousNonBlankLine(clean_lines, linenum)[0].find('for') == -1
-             or GetPreviousNonBlankLine(clean_lines, linenum)[0].find(';') != -1) and
+             or GetPreviousNonBlankLine(clean_lines, linenum)[0].find(';') != -1)
         # It's ok to have many commands in a switch case that fits in 1 line
-        not ((cleansed_line.find('case ') != -1
-              or cleansed_line.find('default:') != -1) and
-             cleansed_line.find('break;') != -1)):
+        and not ((cleansed_line.find('case ') != -1
+                 or cleansed_line.find('default:') != -1)
+                 and cleansed_line.find('break;') != -1)):
         error(filename, linenum, 'whitespace/newline', 0,
               'More than one command on the same line')
 
@@ -5372,8 +5368,8 @@ def CheckForNonConstReference(filename, clean_lines, linenum,
     # function body, including one that was just introduced by a trailing '{'.
     # TODO(unknown): Doesn't account for 'catch(Exception& e)' [rare].
     if (nesting_state.previous_stack_top
-        and not (isinstance(nesting_state.previous_stack_top, _ClassInfo) or
-                 isinstance(nesting_state.previous_stack_top, _NamespaceInfo))):
+        and not (isinstance(nesting_state.previous_stack_top, _ClassInfo)
+                 or isinstance(nesting_state.previous_stack_top, _NamespaceInfo))):
         # Not at toplevel, not within a class, and not within a namespace
         return
 
@@ -5479,12 +5475,12 @@ def CheckCasts(filename, clean_lines, linenum, error):
         # - Placement new
         # - Alias declarations
         matched_funcptr = match.group(3)
-        if (matched_new_or_template is None and
-            not (matched_funcptr
-                 and (Match(r'\((?:[^() ]+::\s*\*\s*)?[^() ]+\)\s*\(',
-                            matched_funcptr) or
-                      matched_funcptr.startswith('(*)'))) and
-            not Match(r'\s*using\s+\S+\s*=\s*' + matched_type, line)
+        if (matched_new_or_template is None
+                and not (matched_funcptr
+                         and (Match(r'\((?:[^() ]+::\s*\*\s*)?[^() ]+\)\s*\(',
+                                    matched_funcptr)
+                              or matched_funcptr.startswith('(*)')))
+                and not Match(r'\s*using\s+\S+\s*=\s*' + matched_type, line)
                 and not Search(r'new\(\S+\)\s*' + matched_type, line)):
             error(filename, linenum, 'readability/casting', 4,
                   'Using deprecated casting style.  '
@@ -5615,14 +5611,14 @@ def ExpectingFunctionArgs(clean_lines, linenum):
       of function types.
     """
     line = clean_lines.elided[linenum]
-    return (Match(r'^\s*MOCK_(CONST_)?METHOD\d+(_T)?\(', line) or
-            (linenum >= 2 and
-             (Match(r'^\s*MOCK_(?:CONST_)?METHOD\d+(?:_T)?\((?:\S+,)?\s*$',
-                    clean_lines.elided[linenum - 1])
-              or Match(r'^\s*MOCK_(?:CONST_)?METHOD\d+(?:_T)?\(\s*$',
-                       clean_lines.elided[linenum - 2])
-              or Search(r'\bstd::m?function\s*\<\s*$',
-                        clean_lines.elided[linenum - 1]))))
+    return (Match(r'^\s*MOCK_(CONST_)?METHOD\d+(_T)?\(', line)
+            or (linenum >= 2
+                and (Match(r'^\s*MOCK_(?:CONST_)?METHOD\d+(?:_T)?\((?:\S+,)?\s*$',
+                     clean_lines.elided[linenum - 1])
+                     or Match(r'^\s*MOCK_(?:CONST_)?METHOD\d+(?:_T)?\(\s*$',
+                              clean_lines.elided[linenum - 2])
+                     or Search(r'\bstd::m?function\s*\<\s*$',
+                               clean_lines.elided[linenum - 1]))))
 
 
 _HEADERS_CONTAINING_TEMPLATES = (
